@@ -5,6 +5,7 @@ import { createAndSignStatusMessage, encodeSignedStatusMessage } from "../protob
 import { ServiceState } from "../protobuf/schema.ts";
 import { WakuNodeManager } from "../waku/node.ts";
 import { getHealthStatus } from "../waku/config.ts";
+import { HealthStatus } from "@waku/sdk";
 
 export const sendCommand = new Command()
   .name("send")
@@ -55,30 +56,37 @@ export const sendCommand = new Command()
 
       await wakuManager.start();
 
-      // Uncomment to enforce health checking if needed
-      // const health = wakuManager.getHealth();
-      // if (health !== 3) {
-      //   throw new Error(`Waku node not healthy: ${getHealthStatus(health)}`);
-      // }
+      const health = wakuManager.getHealth();
+      if (health !== HealthStatus.SufficientlyHealthy) {
+        throw new Error(`Waku node not healthy: ${getHealthStatus(health)}`);
+      }
 
-      const encoder = wakuManager.getNode()!.createEncoder({ contentTopic: config.contentTopic });
+      const node = wakuManager.getNode();
+      if (!node) {
+        throw new Error("Waku node not initialized after start");
+      }
 
-      const result = await wakuManager.getNode()!.lightPush.send(encoder, { payload: encodedMessage });
+      const encoder = node.createEncoder({ contentTopic: config.contentTopic });
 
-      if (!result.isSuccess || !result.successes || result.successes.length === 0) {
+      const result = await node.lightPush.send(encoder, { payload: encodedMessage });
+
+      // Check if the message was successfully sent to at least one peer
+      if (!result.successes || result.successes.length === 0) {
         throw new Error(
-          `Failed to send message: ${JSON.stringify(result.failures)}`,
+          `Failed to send message (no successful deliveries). Failures: ${JSON.stringify(result.failures || [])}`,
         );
       }
 
       console.log(`✓ Message sent successfully! Peers: ${result.successes.join(", ")}`);
       console.log(`Topic: ${config.contentTopic}`);
 
+      await wakuManager.stop();
+      process.exit(0);
+
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       console.error(`Error: ${errorMessage}`);
-      process.exit(1);
-    } finally {
       await wakuManager.stop();
+      process.exit(1);
     }
   });

@@ -1,8 +1,7 @@
 import { Command } from "commander";
 import { WakuNodeManager } from "../waku/node.ts";
 import { getHealthStatus } from "../waku/config.ts";
-
-const START_TIMEOUT_MS = 30000;
+import { HealthStatus } from "@waku/sdk";
 
 export const statusCommand = new Command()
   .name("status")
@@ -11,35 +10,29 @@ export const statusCommand = new Command()
     const manager = new WakuNodeManager();
 
     try {
-      const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => {
-          reject(new Error(`Timed out after ${START_TIMEOUT_MS / 1000}s waiting for node to start`));
-        }, START_TIMEOUT_MS);
-      });
-
-      await Promise.race([
-        manager.start(),
-        timeoutPromise
-      ]);
+      await manager.start();
 
       const node = manager.getNode();
-      const isStarted = node?.isStarted() ?? false;
-      const isConnected = manager.isConnected();
-      const health = manager.getHealth();
-      const peerCount = await manager.getPeerCount();
-      const peers = node ? await node.getConnectedPeers() : [];
+      if (!node) {
+        throw new Error("Node not initialized after start");
+      }
 
-      const healthStatuses = [
-        "Unhealthy",
-        "MinimallyHealthy",
-        "SufficientlyHealthy"
-      ];
+      const health = manager.getHealth();
+      if (health !== HealthStatus.SufficientlyHealthy) {
+        const healthStatus = getHealthStatus(health);
+        throw new Error(`Node is not sufficiently healthy: ${healthStatus} (status: ${health})`);
+      }
+
+      const isStarted = node.isStarted();
+      const isConnected = manager.isConnected();
+      const peerCount = await manager.getPeerCount();
+      const peers = await node.getConnectedPeers();
 
       console.log("Waku Node Health Status:");
       console.log("=======================");
       console.log(`Node Status: ${isStarted ? "Started" : "Stopped"}`);
       console.log(`Connection: ${isConnected ? "Connected" : "Disconnected"}`);
-      console.log(`Health Level: ${health} (${healthStatuses[health] || "Unknown"})`);
+      console.log(`Health Level: ${HealthStatus[health]} (${health})`);
       console.log(`Health Description: ${getHealthStatus(health)}`);
       console.log(`Connected Peers: ${peerCount}`);
 
@@ -69,21 +62,17 @@ export const peersCommand = new Command()
     const manager = new WakuNodeManager();
 
     try {
-      const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => {
-          reject(new Error(`Timed out after ${START_TIMEOUT_MS / 1000}s waiting for node to start`));
-        }, START_TIMEOUT_MS);
-      });
-
-      await Promise.race([
-        manager.start(),
-        timeoutPromise
-      ]);
+      await manager.start();
 
       const node = manager.getNode();
       if (!node) {
-        console.error("Error: Failed to initialize Waku node");
-        return;
+        throw new Error("Node not initialized after start");
+      }
+
+      const health = manager.getHealth();
+      if (health !== HealthStatus.SufficientlyHealthy) {
+        const healthStatus = getHealthStatus(health);
+        throw new Error(`Node is not sufficiently healthy: ${healthStatus} (status: ${health})`);
       }
 
       const peers = await node.getConnectedPeers();

@@ -1,4 +1,4 @@
-import { createLightNode, LightNode, HealthStatus } from "@waku/sdk";
+import { createLightNode, LightNode, HealthStatus, Protocols } from "@waku/sdk";
 import { createWakuConfig, getHealthStatus } from "./config.ts";
 
 const HEALTH_CHECK_TIMEOUT_MS = 30000;
@@ -19,10 +19,13 @@ export class WakuNodeManager {
       this.node = await createLightNode(config);
       
       await this.node.start();
-      
+
       await this.waitForSufficientlyHealthy();
-      
-      this.node.lightPush.start();
+
+      // Ensure LightPush peers are connected before starting the service
+      await this.node.waitForPeers([Protocols.LightPush], 10000);
+
+      await this.node.lightPush.start();
       
     } catch (error) {
       this.node = null;
@@ -69,9 +72,9 @@ export class WakuNodeManager {
 
     const nodeToStop = this.node;
     this.node = null;
-    
+
     try {
-      nodeToStop.lightPush.stop();
+      await nodeToStop.lightPush.stop();
       await nodeToStop.stop();
     } catch (error) {
       console.error('Error stopping Waku node:', error);
