@@ -1,0 +1,46 @@
+{
+  "name": "dpulse",
+  "version": "0.1.0",
+  "description": "Distributed pulse messaging CLI",
+  "type": "module",
+  "main": "./src/cli/main.ts",
+  "bin": {
+    "dpulse": "./dist/cli/main.js"
+  },
+  "scripts": {
+    "dev": "tsx src/cli/main.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "biome check src/"
+  },
+  "dependencies": {
+    "@waku/sdk": "^0.0.36",
+    "@waku/core": "^0.0.40",
+    "protobufjs": "^8.0.0",
+    "dotenv": "^16.4.5",
+    "commander": "^12.1.0",
+    "inquirer": "^12.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "typescript": "^5.7.2",
+    "tsx": "^4.19.2"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "files": [
+    "dist",
+    "keys",
+    "src"
+  ],
+  "keywords": [
+    "waku",
+    "p2p",
+    "messaging",
+    "cli"
+  ],
+  "author": "",
+  "license": "MIT"
+}

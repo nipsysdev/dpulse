@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Deno
+.deno/
+deno.lock
+
+# TypeScript
+dist/
+*.tsbuildinfo
+
+# Keys
+keys/private.pem
+
+# Environment
+.env*
+!env.example
+
+# OS
+.DS_Store
+Thumbs.db
+# Test outputs
+node_modules/
+*.log
+*.tsbuildinfo
+
