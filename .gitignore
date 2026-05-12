@@ -13,7 +13,7 @@ dist/
 *.tsbuildinfo
 
 # Keys
-keys/private.pem
+*.pem
 
 # Environment
 .env*
