@@ -22,8 +22,8 @@ export class WakuNodeManager {
 
       await this.waitForSufficientlyHealthy();
 
-      // Ensure LightPush peers are connected before starting the service
-      await this.node.waitForPeers([Protocols.LightPush], 10000);
+      // Ensure LightPush and Store peers are connected before starting the service
+      await this.node.waitForPeers([Protocols.LightPush, Protocols.Store], 20000);
 
       await this.node.lightPush.start();
       

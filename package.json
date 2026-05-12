@@ -16,7 +16,6 @@
   },
   "dependencies": {
     "@waku/sdk": "^0.0.36",
-    "@waku/core": "^0.0.40",
     "protobufjs": "^8.0.0",
     "dotenv": "^16.4.5",
     "commander": "^12.1.0",
