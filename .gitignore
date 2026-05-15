@@ -4,12 +4,7 @@ package-lock.json
 yarn.lock
 pnpm-lock.yaml
 
-# Deno
-.deno/
-deno.lock
-
 # TypeScript
-dist/
 *.tsbuildinfo
 
 # Keys

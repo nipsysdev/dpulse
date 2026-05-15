@@ -4,6 +4,13 @@
   "description": "Distributed pulse messaging CLI",
   "type": "module",
   "main": "./src/cli/main.ts",
+  "author": "Xavier Saliniere <bonjour@xaviers.sh>",
+  "license": "GPL-3.0-or-later",
+  "private": "true",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nipsysdev/dpulse"
+  },
   "scripts": {
     "dev": "tsx src/cli/main.ts",
     "dpulse": "tsx src/cli/main.ts",
@@ -43,7 +50,5 @@
     "p2p",
     "messaging",
     "cli"
-  ],
-  "author": "",
-  "license": "MIT"
+  ]
 }
