@@ -1,7 +1,6 @@
-import { StatusMessage } from "./schema.ts";
-import type { StatusMessage as StatusMessageType } from "./schema.ts";
-import { signMessage, verifyMessage, signatureToBase64, base64ToSignature } from "../crypto/signature.ts";
-import { importPublicKey, exportPublicKey } from "../crypto/keys.ts";
+import { signatureToBase64, signMessage } from '../crypto/signature.ts';
+import type { StatusMessage as StatusMessageType } from './schema.ts';
+import { StatusMessage } from './schema.ts';
 
 export function encodeStatusMessage(message: StatusMessageType): Uint8Array {
   const errMsg = StatusMessage.verify(message);
@@ -28,31 +27,39 @@ export function validateStatusMessage(message: StatusMessageType): boolean {
     return false;
   }
 
-  if (!message.serviceName || typeof message.serviceName !== "string") {
+  if (!message.serviceName || typeof message.serviceName !== 'string') {
     return false;
   }
 
-  if (message.state === undefined || message.state === null) {
+  if (!message.displayName || typeof message.displayName !== 'string') {
     return false;
   }
 
-  const validStates = [0, 1, 2, 3];
-  if (!validStates.includes(message.state)) {
+  if (!message.description || typeof message.description !== 'string') {
     return false;
   }
 
-  if (!message.timestamp || typeof message.timestamp !== "number") {
+  if (message.status === undefined || message.status === null) {
+    return false;
+  }
+
+  const validStates = [0, 1, 2];
+  if (!validStates.includes(message.status)) {
+    return false;
+  }
+
+  if (!message.timestamp || typeof message.timestamp !== 'number') {
     return false;
   }
 
   const now = Date.now();
-  const twentyFourHours = 24 * 60 * 60 * 1000;
+  const oneHour = 60 * 60 * 1000;
 
-  if (message.timestamp > now + twentyFourHours) {
+  if (message.timestamp > now + oneHour) {
     return false;
   }
 
-  if (message.timestamp < now - twentyFourHours) {
+  if (message.timestamp < now - oneHour) {
     return false;
   }
 
@@ -60,37 +67,32 @@ export function validateStatusMessage(message: StatusMessageType): boolean {
 }
 
 export async function createAndSignStatusMessage(
-  data: Omit<StatusMessageType, "signature" | "publicKey">,
+  data: Omit<StatusMessageType, 'signature'>,
   keyPair: { privateKey: CryptoKey; publicKey: CryptoKey },
 ): Promise<StatusMessageType> {
-  const { serviceName, state, timestamp, message } = data;
+  const { serviceName, displayName, description, status, timestamp, iconCid } =
+    data;
 
   const encoder = new TextEncoder();
   const payload =
     serviceName +
-    state.toString() +
+    displayName +
+    description +
+    status.toString() +
     timestamp.toString();
   const payloadBytes = encoder.encode(payload);
 
   const signature = await signMessage(payloadBytes, keyPair.privateKey);
   const signatureBase64 = signatureToBase64(signature);
 
-  const publicKeyPem = await exportPublicKey(keyPair.publicKey);
-  const publicKeyBytes = Buffer.from(
-    publicKeyPem
-      .replace("-----BEGIN PUBLIC KEY-----", "")
-      .replace("-----END PUBLIC KEY-----", "")
-      .replace(/\s/g, ""),
-    'base64',
-  );
-
   return {
     serviceName,
-    state,
+    displayName,
+    description,
+    status,
     timestamp,
-    message,
+    iconCid,
     signature: signatureBase64,
-    publicKey: publicKeyBytes,
   };
 }
 
@@ -99,34 +101,8 @@ export async function encodeSignedStatusMessage(
 ): Promise<Uint8Array> {
   const isValid = validateStatusMessage(message);
   if (!isValid) {
-    throw new Error("Invalid StatusMessage");
+    throw new Error('Invalid StatusMessage');
   }
 
   return encodeStatusMessage(message);
-}
-
-export async function decodeAndVerifyStatusMessage(
-  bytes: Uint8Array,
-  publicKeyPem: string,
-): Promise<StatusMessageType | null> {
-  const message = decodeStatusMessage(bytes);
-
-  if (!message.signature || !message.publicKey) {
-    return null;
-  }
-
-  const publicKey = await importPublicKey(publicKeyPem);
-
-  const encoder = new TextEncoder();
-  const payload =
-    message.serviceName +
-    message.state.toString() +
-    message.timestamp.toString();
-  const payloadBytes = encoder.encode(payload);
-
-  const signature = base64ToSignature(message.signature);
-
-  const isValid = await verifyMessage(payloadBytes, signature, publicKey);
-
-  return isValid ? message : null;
 }
