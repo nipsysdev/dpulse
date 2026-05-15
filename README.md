@@ -11,22 +11,13 @@ pnpm install
 ## Usage
 
 ```bash
-# Generate cryptographic keys (first time)
-pnpm run dev keys generate
-
 # Show current configuration
-pnpm run dev config show
+bun run dev config show
 
-# Check Waku node health
-pnpm run dev waku status
+# Run healthchecks
+bun run dev check
 
-# List connected peers
-pnpm run dev waku peers
-
-# Send a status message
-pnpm run dev send --service <name> --state <state> "<message>"
-
-# Available states: operational, degraded, down
+# Available states: healthy (0), degraded (1), down (2)
 ```
 
 ## Development
