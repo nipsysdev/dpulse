@@ -19,6 +19,9 @@ dist/
 .env*
 !env.example
 
+# dpulse configuration
+dpulse.yml
+
 # OS
 .DS_Store
 Thumbs.db
