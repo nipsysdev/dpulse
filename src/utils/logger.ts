@@ -1,16 +1,19 @@
-import type { Config } from "../config/index.ts";
+import type { Config } from '../config/index.ts';
 
 let config: Config = {
-  environment: "dev",
-  logLevel: "info",
-  contentTopic: ""
+  environment: 'dev',
+  logLevel: 'info',
+  contentTopic: '',
+  services: [],
+  timeout: 5000,
+  iconCids: {},
 };
 
 const LOG_LEVELS = {
   debug: 0,
   info: 1,
   warn: 2,
-  error: 3
+  error: 3,
 } as const;
 
 export function setConfig(cfg: Config): void {
