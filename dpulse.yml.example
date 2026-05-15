@@ -1,0 +1,56 @@
+# Example dpulse.yml configuration file
+
+# Global settings
+timeout: 5000
+environment: dev
+
+# Environment-specific configurations
+environments:
+  dev:
+    contentTopic: "/dpulse_site/1.0.0/dev/proto"
+    logLevel: debug
+  prod:
+    contentTopic: "/dpulse_site/1.0.0/prod/proto"
+    logLevel: info
+
+# Services to monitor
+services:
+  # HTTP/Web service example
+  - name: api-server
+    displayName: "API Server"
+    description: "Main REST API endpoint"
+    type: http
+    url: https://api.example.com/health
+    expect:
+      status: 200
+
+  # Another HTTP service with minimal config
+  - name: website
+    displayName: "Website"
+    description: "Main website homepage"
+    type: http
+    url: https://example.com
+
+  # Command-based service check example
+  - name: database
+    displayName: "Database"
+    description: "PostgreSQL database connection"
+    type: command
+    command: pg_isready -h localhost -p 5432
+    expect:
+      output_contains: "accepting connections"
+
+  # Command with no expected output
+  - name: cache
+    displayName: "Redis Cache"
+    description: "Redis server status"
+    type: command
+    command: redis-cli ping
+    expect:
+      output_contains: "PONG"
+
+# Custom icons for services (optional)
+# Maps service names to IPFS CIDs
+icons:
+  api-server: |
+    bafkreie7ohywtosou76tasm7j63yigtzxe7d5zqus4zu3j6oltvgtibeom
