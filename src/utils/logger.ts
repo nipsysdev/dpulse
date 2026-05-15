@@ -1,4 +1,5 @@
-import type { Config } from '../config/index.ts';
+import pino from 'pino';
+import type { Config } from '../config/index.js';
 
 let config: Config = {
   environment: 'dev',
@@ -16,30 +17,88 @@ const LOG_LEVELS = {
   error: 3,
 } as const;
 
+let logger: ReturnType<typeof pino> | null = null;
+
+function getLogger(): ReturnType<typeof pino> {
+  if (!logger) {
+    const isDevelopment =
+      config.environment === 'dev' || process.env.NODE_ENV === 'development';
+
+    const pinoConfig = {
+      level: config.logLevel,
+      timestamp: pino.stdTimeFunctions.isoTime,
+      ...(isDevelopment && {
+        transport: {
+          target: 'pino-pretty',
+          options: {
+            colorize: true,
+            translateTime: 'SYS:standard',
+            ignore: 'pid,hostname',
+            singleLine: false,
+            messageFormat: '{msg}',
+            errorProps: 'err',
+          },
+        },
+      }),
+    };
+
+    logger = pino(pinoConfig);
+  }
+  return logger;
+}
+
 export function setConfig(cfg: Config): void {
   config = cfg;
+  logger = null;
 }
 
-export function debug(message: string): void {
+export function debug(message: string, data?: Record<string, unknown>): void {
   if (LOG_LEVELS[config.logLevel] <= LOG_LEVELS.debug) {
-    console.log(`[DEBUG] ${message}`);
+    if (data) {
+      getLogger().debug(data, message);
+    } else {
+      getLogger().debug(message);
+    }
   }
 }
 
-export function info(message: string): void {
+export function info(message: string, data?: Record<string, unknown>): void {
   if (LOG_LEVELS[config.logLevel] <= LOG_LEVELS.info) {
-    console.log(`[INFO] ${message}`);
+    if (config.logLevel === 'debug' && data) {
+      getLogger().info(data, message);
+    } else {
+      getLogger().info(message);
+    }
   }
 }
 
-export function warn(message: string): void {
+export function warn(message: string, data?: Record<string, unknown>): void {
   if (LOG_LEVELS[config.logLevel] <= LOG_LEVELS.warn) {
-    console.warn(`[WARN] ${message}`);
+    if (config.logLevel === 'debug' && data) {
+      getLogger().warn(data, message);
+    } else {
+      getLogger().warn(message);
+    }
   }
 }
 
-export function error(message: string): void {
+export function error(message: string, data?: Record<string, unknown>): void {
   if (LOG_LEVELS[config.logLevel] <= LOG_LEVELS.error) {
-    console.error(`[ERROR] ${message}`);
+    if (data) {
+      if (config.logLevel === 'debug') {
+        // Full context in debug mode
+        getLogger().error(data, message);
+      } else {
+        // Only key error info in production/info mode
+        const errorData = {
+          error: (data as Record<string, unknown>).error,
+          errorType: (data as Record<string, unknown>).errorType,
+          errorCode: (data as Record<string, unknown>).errorCode,
+        };
+        getLogger().error(errorData, message);
+      }
+    } else {
+      getLogger().error(message);
+    }
   }
 }
