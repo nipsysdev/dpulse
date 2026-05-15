@@ -7,10 +7,10 @@ environment: dev
 # Environment-specific configurations
 environments:
   dev:
-    contentTopic: "/dpulse_site/1.0.0/dev/proto"
+    contentTopic: "/dpulse_example/1.0.0/dev/proto"
     logLevel: debug
   prod:
-    contentTopic: "/dpulse_site/1.0.0/prod/proto"
+    contentTopic: "/dpulse_example/1.0.0/prod/proto"
     logLevel: info
 
 # Services to monitor
