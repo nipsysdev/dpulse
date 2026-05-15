@@ -1,0 +1,23 @@
+# Test dpulse.yml with multiple environments
+
+timeout: 5000
+environment: dev
+
+environments:
+  dev:
+    contentTopic: "/nipsys/dpulse/1.0.0/dev/proto"
+    logLevel: debug
+  prod:
+    contentTopic: "/nipsys/dpulse/1.0.0/prod/proto"
+    logLevel: info
+
+services:
+  - name: test-web
+    displayName: "Test Web"
+    description: "Test web service"
+    type: http
+    url: https://example.com
+    expect:
+      status: 200
+
+iconCids: {}
