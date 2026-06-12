@@ -2,13 +2,16 @@
 
 timeout: 5000
 environment: dev
+feedUrl: "https://test.example.com/feed.atom"
 
 environments:
   dev:
-    contentTopic: "/nipsys/dpulse/1.0.0/dev/proto"
+    contentTopic: "/nipsys/dpulse/1.0.0/test_dev/proto"
+    feedContentTopic: "/nipsys/feed/1.0.0/test_dev/proto"
     logLevel: debug
   prod:
-    contentTopic: "/nipsys/dpulse/1.0.0/prod/proto"
+    contentTopic: "/nipsys/dpulse/1.0.0/test_prod/proto"
+    feedContentTopic: "/nipsys/feed/1.0.0/test_prod/proto"
     logLevel: info
 
 services:

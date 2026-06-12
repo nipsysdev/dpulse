@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { generateKeyPair } from '../src/crypto/keys.ts';
+import { generateKeyPair } from '../src/crypto/keys.js';
 import {
   createAndSignStatusMessage,
   decodeStatusMessage,
   encodeStatusMessage,
   validateStatusMessage,
-} from '../src/protobuf/codec.ts';
-import { ServiceState } from '../src/protobuf/schema.ts';
+} from '../src/protobuf/codec.js';
+import { ServiceState } from '../src/protobuf/schema.js';
 
 describe('StatusMessage Protobuf', () => {
   it('should encode and decode a valid StatusMessage message', () => {

@@ -1,13 +1,33 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DpulseConfig } from '../../src/config/schema.js';
 import {
   runAllChecks,
   runChecksForService,
 } from '../../src/healthcheck/index.js';
 
+let mockFetch: ReturnType<typeof vi.fn>;
+let originalFetch: typeof global.fetch;
+
+beforeEach(() => {
+  originalFetch = global.fetch;
+  mockFetch = vi.fn();
+  global.fetch = mockFetch as unknown as typeof fetch;
+});
+
+afterEach(() => {
+  global.fetch = originalFetch;
+  vi.restoreAllMocks();
+});
+
 describe('Healthcheck Orchestrator', () => {
   describe('runAllChecks', () => {
     it('should run HTTP check and return result', async () => {
+      mockFetch.mockResolvedValue({
+        ok: true,
+        status: 200,
+        text: () => Promise.resolve('OK'),
+      });
+
       const config: DpulseConfig = {
         timeout: 5000,
         services: [
@@ -16,7 +36,7 @@ describe('Healthcheck Orchestrator', () => {
             displayName: 'HTTPBin',
             description: 'HTTP testing service',
             type: 'http',
-            url: 'https://httpbin.org/status/200',
+            url: 'https://example.com/health',
           },
         ],
       };
@@ -28,7 +48,7 @@ describe('Healthcheck Orchestrator', () => {
       expect(results[0].displayName).toBe('HTTPBin');
       expect(results[0].description).toBe('HTTP testing service');
       expect(results[0].status).toBe(0);
-    }, 15000);
+    });
 
     it('should run command check and return result', async () => {
       const config: DpulseConfig = {
@@ -80,6 +100,12 @@ describe('Healthcheck Orchestrator', () => {
     });
 
     it('should return down for failed HTTP check', async () => {
+      mockFetch.mockResolvedValue({
+        ok: false,
+        status: 500,
+        text: () => Promise.resolve('Internal Server Error'),
+      });
+
       const config: DpulseConfig = {
         timeout: 5000,
         services: [
@@ -88,7 +114,7 @@ describe('Healthcheck Orchestrator', () => {
             displayName: 'Failing HTTP',
             description: 'Will return 500',
             type: 'http',
-            url: 'https://httpbin.org/status/500',
+            url: 'https://example.com/error',
           },
         ],
       };
@@ -97,7 +123,7 @@ describe('Healthcheck Orchestrator', () => {
 
       expect(results).toHaveLength(1);
       expect(results[0].status).toBe(2);
-    }, 15000);
+    });
 
     it('should return down for failed command check', async () => {
       const config: DpulseConfig = {

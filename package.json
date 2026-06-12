@@ -25,7 +25,9 @@
   "dependencies": {
     "@waku/sdk": "^0.0.36",
     "commander": "^12.1.0",
+    "entities": "^8.0.0",
     "env-paths": "^4.0.0",
+    "fast-xml-parser": "^5.8.0",
     "inquirer": "^12.1.0",
     "js-yaml": "^4.1.1",
     "pino": "^10.3.1",

@@ -3,14 +3,17 @@
 # Global settings
 timeout: 5000
 environment: dev
+feedUrl: "https://pixelfed.social/users/example.atom"
 
 # Environment-specific configurations
 environments:
   dev:
     contentTopic: "/dpulse_example/1.0.0/dev/proto"
+    feedContentTopic: "/pixelfed_feed/1.0.0/dev/proto"
     logLevel: debug
   prod:
     contentTopic: "/dpulse_example/1.0.0/prod/proto"
+    feedContentTopic: "/pixelfed_feed/1.0.0/prod/proto"
     logLevel: info
 
 # Services to monitor
@@ -51,6 +54,5 @@ services:
 
 # Custom icons for services (optional)
 # Maps service names to IPFS CIDs
-icons:
-  api-server: |
-    bafkreie7ohywtosou76tasm7j63yigtzxe7d5zqus4zu3j6oltvgtibeom
+iconCids:
+  api-server: bafkreie7ohywtosou76tasm7j63yigtzxe7d5zqus4zu3j6oltvgtibeom

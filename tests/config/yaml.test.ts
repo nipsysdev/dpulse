@@ -403,7 +403,8 @@ services:
           },
         ],
         iconCids: {
-          'test-service': 'bafkreie7ohywtosou76tasm7j63yigtzxe7d5zqus4zu3j6oltvgtibeom',
+          'test-service':
+            'bafkreie7ohywtosou76tasm7j63yigtzxe7d5zqus4zu3j6oltvgtibeom',
         },
       };
 

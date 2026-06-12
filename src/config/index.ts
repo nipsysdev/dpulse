@@ -6,6 +6,8 @@ import type { ServiceConfig } from './schema.js';
 export interface Config {
   environment: string;
   contentTopic: string;
+  feedContentTopic?: string;
+  feedUrl?: string;
   logLevel: 'debug' | 'info' | 'warn' | 'error';
   services: ServiceConfig[];
   timeout: number;
@@ -16,6 +18,8 @@ export interface ConfigOverrides {
   env?: string;
   logLevel?: 'debug' | 'info' | 'warn' | 'error';
   contentTopic?: string;
+  feedContentTopic?: string;
+  feedUrl?: string;
 }
 
 export async function loadConfig(
@@ -49,9 +53,16 @@ export async function loadConfig(
     );
   }
 
+  const feedContentTopic =
+    overrides.feedContentTopic ?? envConfig.feedContentTopic;
+
+  const feedUrl = overrides.feedUrl ?? dpulseConfig.feedUrl;
+
   return {
     environment,
     contentTopic,
+    feedContentTopic,
+    feedUrl,
     logLevel,
     services: dpulseConfig.services,
     timeout: dpulseConfig.timeout ?? 5000,

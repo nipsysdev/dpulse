@@ -1,7 +1,7 @@
-import type { Config } from '../config/index.ts';
-import type { StatusMessage } from '../protobuf/schema.ts';
-import { runCommandCheck } from './command.ts';
-import { runHttpCheck } from './http.ts';
+import type { Config } from '../config/index.js';
+import type { StatusMessage } from '../protobuf/schema.js';
+import { runCommandCheck } from './command.js';
+import { runHttpCheck } from './http.js';
 
 export async function runAllChecks(config: Config): Promise<StatusMessage[]> {
   // Use the timeout from config or default to 5000ms

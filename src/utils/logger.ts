@@ -17,10 +17,10 @@ const LOG_LEVELS = {
   error: 3,
 } as const;
 
-let logger: ReturnType<typeof pino> | null = null;
+let pinoLogger: ReturnType<typeof pino> | null = null;
 
 function getLogger(): ReturnType<typeof pino> {
-  if (!logger) {
+  if (!pinoLogger) {
     const isDevelopment =
       config.environment === 'dev' || process.env.NODE_ENV === 'development';
 
@@ -42,63 +42,88 @@ function getLogger(): ReturnType<typeof pino> {
       }),
     };
 
-    logger = pino(pinoConfig);
+    pinoLogger = pino(pinoConfig);
   }
-  return logger;
+  return pinoLogger;
 }
 
-export function setConfig(cfg: Config): void {
-  config = cfg;
-  logger = null;
-}
+const logger = {
+  setConfig: (cfg: Config): void => {
+    config = cfg;
+    pinoLogger = null;
+  },
 
-export function debug(message: string, data?: Record<string, unknown>): void {
-  if (LOG_LEVELS[config.logLevel] <= LOG_LEVELS.debug) {
-    if (data) {
-      getLogger().debug(data, message);
-    } else {
-      getLogger().debug(message);
-    }
-  }
-}
-
-export function info(message: string, data?: Record<string, unknown>): void {
-  if (LOG_LEVELS[config.logLevel] <= LOG_LEVELS.info) {
-    if (config.logLevel === 'debug' && data) {
-      getLogger().info(data, message);
-    } else {
-      getLogger().info(message);
-    }
-  }
-}
-
-export function warn(message: string, data?: Record<string, unknown>): void {
-  if (LOG_LEVELS[config.logLevel] <= LOG_LEVELS.warn) {
-    if (config.logLevel === 'debug' && data) {
-      getLogger().warn(data, message);
-    } else {
-      getLogger().warn(message);
-    }
-  }
-}
-
-export function error(message: string, data?: Record<string, unknown>): void {
-  if (LOG_LEVELS[config.logLevel] <= LOG_LEVELS.error) {
-    if (data) {
-      if (config.logLevel === 'debug') {
-        // Full context in debug mode
-        getLogger().error(data, message);
+  debug: (message: string, data?: Record<string, unknown>): void => {
+    if (LOG_LEVELS[config.logLevel] <= LOG_LEVELS.debug) {
+      if (data) {
+        getLogger().debug(data, message);
       } else {
-        // Only key error info in production/info mode
-        const errorData = {
-          error: (data as Record<string, unknown>).error,
-          errorType: (data as Record<string, unknown>).errorType,
-          errorCode: (data as Record<string, unknown>).errorCode,
-        };
-        getLogger().error(errorData, message);
+        getLogger().debug(message);
       }
-    } else {
-      getLogger().error(message);
     }
-  }
-}
+  },
+
+  info: (message: string, data?: Record<string, unknown>): void => {
+    if (LOG_LEVELS[config.logLevel] <= LOG_LEVELS.info) {
+      if (config.logLevel === 'debug' && data) {
+        getLogger().info(data, message);
+      } else {
+        getLogger().info(message);
+      }
+    }
+  },
+
+  warn: (message: string, data?: Record<string, unknown>): void => {
+    if (LOG_LEVELS[config.logLevel] <= LOG_LEVELS.warn) {
+      if (config.logLevel === 'debug' && data) {
+        getLogger().warn(data, message);
+      } else {
+        getLogger().warn(message);
+      }
+    }
+  },
+
+  error: (message: string, data?: Record<string, unknown>): void => {
+    if (LOG_LEVELS[config.logLevel] <= LOG_LEVELS.error) {
+      if (data) {
+        if (config.logLevel === 'debug') {
+          getLogger().error(data, message);
+        } else {
+          const errorData = {
+            error: (data as Record<string, unknown>).error,
+            errorType: (data as Record<string, unknown>).errorType,
+            errorCode: (data as Record<string, unknown>).errorCode,
+          };
+          getLogger().error(errorData, message);
+        }
+      } else {
+        getLogger().error(message);
+      }
+    }
+  },
+
+  success: (message: string, data?: Record<string, unknown>): void => {
+    if (data && config.logLevel === 'debug') {
+      getLogger().info(data, `✓ ${message}`);
+    } else {
+      getLogger().info(`✓ ${message}`);
+    }
+  },
+
+  status: (message: string): void => {
+    getLogger().info(message);
+  },
+
+  fail: (message: string): void => {
+    getLogger().error(`✗ ${message}`);
+  },
+
+  summary: (title: string, items: Record<string, string | number>): void => {
+    getLogger().info(`\n=== ${title} ===`);
+    for (const [key, value] of Object.entries(items)) {
+      getLogger().info(`${key.padEnd(12)}${value}`);
+    }
+  },
+};
+
+export default logger;
