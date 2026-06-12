@@ -132,6 +132,13 @@ function validateDpulseConfig(data: unknown): DpulseConfig {
     config.environment = d.environment.trim();
   }
 
+  if (d.feedUrl !== undefined) {
+    if (typeof d.feedUrl !== 'string' || !d.feedUrl.trim()) {
+      throw new Error('feedUrl must be a non-empty string');
+    }
+    config.feedUrl = d.feedUrl.trim();
+  }
+
   if (d.environments !== undefined) {
     if (typeof d.environments !== 'object' || d.environments === null) {
       throw new Error('environments must be an object');
@@ -160,6 +167,18 @@ function validateDpulseConfig(data: unknown): DpulseConfig {
       const environmentConfig: EnvironmentConfig = {
         contentTopic: env.contentTopic.trim(),
       };
+
+      if (env.feedContentTopic !== undefined) {
+        if (
+          typeof env.feedContentTopic !== 'string' ||
+          !env.feedContentTopic.trim()
+        ) {
+          throw new Error(
+            `environment '${key}' feedContentTopic must be a non-empty string`,
+          );
+        }
+        environmentConfig.feedContentTopic = env.feedContentTopic.trim();
+      }
 
       if (env.logLevel !== undefined) {
         if (
@@ -267,6 +286,7 @@ function applyDefaults(config: DpulseConfig): Required<DpulseConfig> {
   return {
     timeout: config.timeout ?? DEFAULT_TIMEOUT,
     environment: config.environment ?? 'dev',
+    feedUrl: config.feedUrl ?? '',
     environments: config.environments ?? {},
     services: config.services,
     iconCids: config.iconCids ?? {},
@@ -300,7 +320,6 @@ export function ensureConfigDirectory(): void {
 
 export function loadDpulseConfig(): DpulseConfig {
   let configPath: string;
-  let isLocalFallback = false;
 
   const paths = envPaths('dpulse', { suffix: '' });
   const systemConfigPath = path.join(paths.config, 'dpulse.yml');
@@ -309,7 +328,6 @@ export function loadDpulseConfig(): DpulseConfig {
     configPath = systemConfigPath;
   } else {
     configPath = path.join(process.cwd(), 'dpulse.yml');
-    isLocalFallback = true;
   }
 
   const content = fs.readFileSync(configPath, 'utf-8');
@@ -321,16 +339,6 @@ export function loadDpulseConfig(): DpulseConfig {
 
   const validated = validateDpulseConfig(parsed);
   const defaulted = applyDefaults(validated) as DpulseConfig;
-
-  Object.defineProperty(defaulted, '_configPath', {
-    value: configPath,
-    enumerable: false,
-  });
-
-  Object.defineProperty(defaulted, '_isLocalFallback', {
-    value: isLocalFallback,
-    enumerable: false,
-  });
 
   return defaulted;
 }

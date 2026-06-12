@@ -1,6 +1,6 @@
-import type { Config } from '../config/index.ts';
-import type { StatusMessage } from '../protobuf/schema.ts';
-import { ServiceState } from '../protobuf/schema.ts';
+import type { Config } from '../config/index.js';
+import type { StatusMessage } from '../protobuf/schema.js';
+import { ServiceState } from '../protobuf/schema.js';
 
 export async function runHttpCheck(
   service: Config['services'][0],

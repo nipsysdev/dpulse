@@ -6,6 +6,7 @@ export interface ExpectConfig {
 
 export interface EnvironmentConfig {
   contentTopic: string;
+  feedContentTopic?: string;
   logLevel?: 'debug' | 'info' | 'warn' | 'error';
 }
 
@@ -22,6 +23,7 @@ export interface ServiceConfig {
 export interface DpulseConfig {
   timeout?: number;
   environment?: string;
+  feedUrl?: string;
   environments?: Record<string, EnvironmentConfig>;
   services: ServiceConfig[];
   iconCids?: Record<string, string>;
