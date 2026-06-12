@@ -9,19 +9,12 @@ import {
   encodeSignedStatusMessage,
 } from '../protobuf/codec.js';
 import { ServiceState } from '../protobuf/schema.js';
-import {
-  debug,
-  info,
-  error as logError,
-  setConfig,
-  warn,
-} from '../utils/logger.js';
+import logger from '../utils/logger.js';
 import { getHealthStatus } from '../waku/config.js';
 import { WakuNodeManager } from '../waku/node.js';
 
 interface ErrorWithCode extends Error {
   code?: string;
-  statusCode?: number;
 }
 
 export const checkCommand = new Command()
@@ -43,41 +36,38 @@ export const checkCommand = new Command()
         contentTopic: options.contentTopic,
       });
 
-      setConfig(config);
+      logger.setConfig(config);
 
-      info('Loaded configuration', {
+      logger.success('Loaded configuration', {
         environment: config.environment,
         logLevel: config.logLevel,
         contentTopic: config.contentTopic,
         servicesCount: config.services.length,
       });
 
-      console.log('✓ Loaded configuration');
-
       const keysAvailable = await keysExist();
       if (!keysAvailable) {
-        logError('Cryptographic keys not found');
+        logger.error('Cryptographic keys not found');
         throw new Error(
           "Keys not found. Run 'dpulse keys generate' to create them first.",
         );
       }
 
       const keyPair = await loadKeyPair();
-      info('Cryptographic keys loaded');
-      console.log('✓ Loaded cryptographic keys');
+      logger.success('Loaded cryptographic keys');
 
-      console.log(`\nRunning ${config.services.length} healthcheck(s)...\n`);
+      logger.status(`\nRunning ${config.services.length} healthcheck(s)...\n`);
 
       const startTime = Date.now();
       const results = await runAllChecks(config);
       const elapsed = Date.now() - startTime;
 
-      info(`Health checks completed in ${elapsed}ms`, {
+      logger.info(`Health checks completed in ${elapsed}ms`, {
         elapsed,
         resultsCount: results.length,
       });
 
-      console.log(`Completed in ${elapsed}ms\\n`);
+      logger.status(`Completed in ${elapsed}ms\n`);
 
       let successCount = 0;
       let degradedCount = 0;
@@ -85,7 +75,7 @@ export const checkCommand = new Command()
 
       for (const result of results) {
         const statusText = getStatusText(result.status);
-        console.log(
+        logger.status(
           `${result.displayName} (${result.serviceName}): ${statusText}`,
         );
 
@@ -98,25 +88,25 @@ export const checkCommand = new Command()
         }
       }
 
-      info('Health check results summary', {
+      logger.info('Health check results summary', {
         successCount,
         degradedCount,
         downCount,
       });
 
       if (results.length === 0) {
-        console.log('\nNo healthchecks to publish.');
+        logger.status('\nNo healthchecks to publish.');
         await wakuManager.stop();
         process.exit(0);
       }
 
-      console.log('\nPublishing signed results to Waku...');
+      logger.status('\nPublishing signed results to Waku...');
 
       await wakuManager.start();
 
       const health = wakuManager.getHealth();
       if (health !== WakuHealthStatus.SufficientlyHealthy) {
-        logError('Waku node not healthy', {
+        logger.error('Waku node not healthy', {
           healthStatus: getHealthStatus(health),
         });
         throw new Error(`Waku node not healthy: ${getHealthStatus(health)}`);
@@ -124,13 +114,13 @@ export const checkCommand = new Command()
 
       const node = wakuManager.getNode();
       if (!node) {
-        logError('Waku node not initialized after start');
+        logger.error('Waku node not initialized after start');
         throw new Error('Waku node not initialized after start');
       }
 
       const encoder = node.createEncoder({ contentTopic: config.contentTopic });
 
-      info('Starting message delivery pipeline', {
+      logger.info('Starting message delivery pipeline', {
         contentTopic: config.contentTopic,
         messagesToPublish: results.length,
       });
@@ -142,7 +132,7 @@ export const checkCommand = new Command()
         const messageStart = Date.now();
         const correlationId = randomUUID();
 
-        info('Starting message delivery', {
+        logger.info('Starting message delivery', {
           serviceName: result.serviceName,
           displayName: result.displayName,
           status: getStatusText(result.status),
@@ -150,7 +140,7 @@ export const checkCommand = new Command()
         });
 
         try {
-          debug('Creating and signing message', {
+          logger.debug('Creating and signing message', {
             serviceName: result.serviceName,
             correlationId,
           });
@@ -160,7 +150,7 @@ export const checkCommand = new Command()
             keyPair,
           );
 
-          debug('Message signed, encoding...', {
+          logger.debug('Message signed, encoding...', {
             serviceName: result.serviceName,
             signatureLength: signedMessage.signature?.length,
             correlationId,
@@ -168,7 +158,7 @@ export const checkCommand = new Command()
 
           const encodedMessage = await encodeSignedStatusMessage(signedMessage);
 
-          debug('Message encoded, publishing via LightPush...', {
+          logger.debug('Message encoded, publishing via LightPush...', {
             serviceName: result.serviceName,
             encodedSize: encodedMessage.length,
             correlationId,
@@ -180,12 +170,11 @@ export const checkCommand = new Command()
 
           const publishDuration = Date.now() - messageStart;
 
-          // Check for successful deliveries
           const successes = publishResult.successes || [];
           const failures = publishResult.failures || [];
 
           if (successes.length === 0) {
-            logError('Message delivery failed - no successful peers', {
+            logger.error('Message delivery failed - no successful peers', {
               serviceName: result.serviceName,
               contentTopic: config.contentTopic,
               encodedSize: encodedMessage.length,
@@ -195,10 +184,9 @@ export const checkCommand = new Command()
               correlationId,
             });
 
-            // Log detailed failure information
             if (failures.length > 0) {
               failures.forEach((failure, index) => {
-                logError('Peer-specific delivery failure', {
+                logger.error('Peer-specific delivery failure', {
                   serviceName: result.serviceName,
                   failureIndex: index,
                   peerId: failure.peerId,
@@ -208,7 +196,7 @@ export const checkCommand = new Command()
                 });
               });
             } else {
-              logError(
+              logger.error(
                 'Delivery failed with no peer information - possible network issue',
                 {
                   serviceName: result.serviceName,
@@ -220,16 +208,15 @@ export const checkCommand = new Command()
               );
             }
 
-            console.error(
-              `  ✗ Failed to publish ${result.serviceName}: No successful deliveries`,
+            logger.fail(
+              `Failed to publish ${result.serviceName}: No successful deliveries`,
             );
             failedCount++;
             continue;
           }
 
-          // Successful delivery with partial failures
           if (failures.length > 0) {
-            info('Message delivered with partial failures', {
+            logger.info('Message delivered with partial failures', {
               serviceName: result.serviceName,
               successCount: successes.length,
               failureCount: failures.length,
@@ -239,9 +226,8 @@ export const checkCommand = new Command()
               correlationId,
             });
 
-            // Log failure details
             failures.forEach((failure, index) => {
-              warn('Peer-specific failure in partial success delivery', {
+              logger.warn('Peer-specific failure in partial success delivery', {
                 serviceName: result.serviceName,
                 failureIndex: index,
                 peerId: failure.peerId,
@@ -251,8 +237,7 @@ export const checkCommand = new Command()
               });
             });
           } else {
-            // Complete success
-            info('Message delivered successfully to all peers', {
+            logger.info('Message delivered successfully to all peers', {
               serviceName: result.serviceName,
               successCount: successes.length,
               peerIds: successes,
@@ -261,8 +246,8 @@ export const checkCommand = new Command()
             });
           }
 
-          console.log(
-            `  ✓ Published ${result.serviceName} to ${successes.length} peer(s)`,
+          logger.success(
+            `Published ${result.serviceName} to ${successes.length} peer(s)`,
           );
           publishedCount++;
         } catch (error) {
@@ -273,7 +258,7 @@ export const checkCommand = new Command()
             error instanceof Error ? error.constructor.name : 'UnknownError';
           const errorCode = (error as ErrorWithCode).code;
 
-          logError('Message delivery threw exception', {
+          logger.error('Message delivery threw exception', {
             serviceName: result.serviceName,
             error: errorMessage,
             errorType: errorName,
@@ -284,8 +269,8 @@ export const checkCommand = new Command()
             stack: error instanceof Error ? error.stack : undefined,
           });
 
-          console.error(
-            `  ✗ Failed to publish ${result.serviceName}: ${errorMessage}`,
+          logger.fail(
+            `Failed to publish ${result.serviceName}: ${errorMessage}`,
           );
           failedCount++;
         }
@@ -293,20 +278,21 @@ export const checkCommand = new Command()
 
       await wakuManager.stop();
 
-      info('Message delivery pipeline completed', {
+      logger.info('Message delivery pipeline completed', {
         publishedCount,
         failedCount,
         totalMessages: results.length,
         contentTopic: config.contentTopic,
       });
 
-      console.log('\\n=== Summary ===');
-      console.log(`Healthy:     ${successCount}/${results.length}`);
-      console.log(`Degraded:    ${degradedCount}/${results.length}`);
-      console.log(`Down:        ${downCount}/${results.length}`);
-      console.log(`Published:   ${publishedCount}/${results.length}`);
-      console.log(`Failed:      ${failedCount}/${results.length}`);
-      console.log(`Topic:       ${config.contentTopic}`);
+      logger.summary('Summary', {
+        Healthy: `${successCount}/${results.length}`,
+        Degraded: `${degradedCount}/${results.length}`,
+        Down: `${downCount}/${results.length}`,
+        Published: `${publishedCount}/${results.length}`,
+        Failed: `${failedCount}/${results.length}`,
+        Topic: config.contentTopic,
+      });
 
       process.exit(publishedCount > 0 ? 0 : 1);
     } catch (error) {
@@ -316,14 +302,14 @@ export const checkCommand = new Command()
         error instanceof Error ? error.constructor.name : 'UnknownError';
       const errorCode = (error as ErrorWithCode).code;
 
-      logError('Fatal error in check command', {
+      logger.error('Fatal error in check command', {
         error: errorMessage,
         errorType: errorName,
         errorCode,
         stack: error instanceof Error ? error.stack : undefined,
       });
 
-      console.error(`\\n✗ Error: ${errorMessage}`);
+      logger.fail(`Error: ${errorMessage}`);
       await wakuManager.stop();
       process.exit(1);
     }

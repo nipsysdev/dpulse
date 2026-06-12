@@ -1,10 +1,10 @@
 import { signatureToBase64, signMessage } from '../crypto/signature.js';
-import { debug, error as logError } from '../utils/logger.js';
+import logger from '../utils/logger.js';
 import type { StatusMessage as StatusMessageType } from './schema.js';
 import { StatusMessage } from './schema.js';
 
 export function encodeStatusMessage(message: StatusMessageType): Uint8Array {
-  debug('Encoding StatusMessage to protobuf', {
+  logger.debug('Encoding StatusMessage to protobuf', {
     serviceName: message.serviceName,
     status: message.status,
     timestamp: message.timestamp,
@@ -13,7 +13,7 @@ export function encodeStatusMessage(message: StatusMessageType): Uint8Array {
 
   const errMsg = StatusMessage.verify(message);
   if (errMsg) {
-    logError('StatusMessage verification failed', {
+    logger.error('StatusMessage verification failed', {
       serviceName: message.serviceName,
       validationError: errMsg,
       message,
@@ -23,7 +23,7 @@ export function encodeStatusMessage(message: StatusMessageType): Uint8Array {
 
   const encoded = StatusMessage.encode(message).finish();
 
-  debug('StatusMessage encoded successfully', {
+  logger.debug('StatusMessage encoded successfully', {
     serviceName: message.serviceName,
     encodedSize: encoded.length,
   });
@@ -92,7 +92,7 @@ export async function createAndSignStatusMessage(
   const { serviceName, displayName, description, status, timestamp, iconCid } =
     data;
 
-  debug('Creating and signing StatusMessage', {
+  logger.debug('Creating and signing StatusMessage', {
     serviceName,
     displayName,
     status,
@@ -108,7 +108,7 @@ export async function createAndSignStatusMessage(
     timestamp.toString();
   const payloadBytes = encoder.encode(payload);
 
-  debug('Signing message payload', {
+  logger.debug('Signing message payload', {
     serviceName,
     payloadSize: payloadBytes.length,
   });
@@ -116,7 +116,7 @@ export async function createAndSignStatusMessage(
   const signature = await signMessage(payloadBytes, keyPair.privateKey);
   const signatureBase64 = signatureToBase64(signature);
 
-  debug('Message signed successfully', {
+  logger.debug('Message signed successfully', {
     serviceName,
     signatureLength: signatureBase64.length,
   });
@@ -135,21 +135,21 @@ export async function createAndSignStatusMessage(
 export async function encodeSignedStatusMessage(
   message: StatusMessageType,
 ): Promise<Uint8Array> {
-  debug('Validating and encoding signed StatusMessage', {
+  logger.debug('Validating and encoding signed StatusMessage', {
     serviceName: message.serviceName,
     hasSignature: !!message.signature,
   });
 
   const isValid = validateStatusMessage(message);
   if (!isValid) {
-    logError('Signed message validation failed', {
+    logger.error('Signed message validation failed', {
       serviceName: message.serviceName,
       message,
     });
     throw new Error('Invalid StatusMessage');
   }
 
-  debug('Signed message validation passed, encoding...', {
+  logger.debug('Signed message validation passed, encoding...', {
     serviceName: message.serviceName,
   });
 

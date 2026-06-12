@@ -8,7 +8,8 @@ import {
   keysExist,
   loadKeyPair,
   saveKeyPair,
-} from '../crypto/keys.ts';
+} from '../crypto/keys.js';
+import logger from '../utils/logger.js';
 
 function pemToArrayBuffer(
   pem: string,
@@ -72,7 +73,7 @@ const generateCommand = new Command()
         ]);
 
         if (!confirm.overwrite) {
-          console.log('Operation cancelled.');
+          logger.status('Operation cancelled.');
           process.exit(0);
         }
       }
@@ -81,17 +82,17 @@ const generateCommand = new Command()
       await saveKeyPair(keyPair);
 
       const keysDir = getKeysPath();
-      console.log('✓ Key pair generated successfully');
-      console.log(`✓ Private key: ${path.join(keysDir, 'private.pem')}`);
-      console.log(`✓ Public key: ${path.join(keysDir, 'public.pem')}`);
+      logger.success('Key pair generated successfully');
+      logger.success(`Private key: ${path.join(keysDir, 'private.pem')}`);
+      logger.success(`Public key: ${path.join(keysDir, 'public.pem')}`);
 
       const publicKeyPem = await exportPublicKey(keyPair.publicKey);
       const fingerprint = await generateFingerprint(publicKeyPem);
-      console.log(`✓ Fingerprint: ${fingerprint.substring(0, 32)}`);
+      logger.success(`Fingerprint: ${fingerprint.substring(0, 32)}`);
     } catch (error: unknown) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
-      console.error(`✗ Error generating keys: ${errorMessage}`);
+      logger.fail(`Error generating keys: ${errorMessage}`);
       process.exit(1);
     }
   });
@@ -103,11 +104,11 @@ const exportPublicCommand = new Command()
     try {
       const keyPair = await loadKeyPair();
       const publicKeyPem = await exportPublicKey(keyPair.publicKey);
-      console.log(publicKeyPem);
+      logger.status(publicKeyPem);
     } catch (error: unknown) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
-      console.error(`✗ Error: ${errorMessage}`);
+      logger.fail(`Error: ${errorMessage}`);
       process.exit(1);
     }
   });
@@ -129,11 +130,11 @@ const fingerprintCommand = new Command()
       const keyPair = await loadKeyPair();
       const publicKeyPem = await exportPublicKey(keyPair.publicKey);
       const fingerprint = await generateFingerprint(publicKeyPem);
-      console.log(`Fingerprint: ${fingerprint.substring(0, 32)}`);
+      logger.status(`Fingerprint: ${fingerprint.substring(0, 32)}`);
     } catch (error: unknown) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
-      console.error(`✗ Error: ${errorMessage}`);
+      logger.fail(`Error: ${errorMessage}`);
       process.exit(1);
     }
   });
@@ -142,10 +143,4 @@ keysCommand.addCommand(generateCommand);
 keysCommand.addCommand(exportCommand);
 keysCommand.addCommand(fingerprintCommand);
 
-export {
-  exportCommand,
-  exportPublicCommand,
-  fingerprintCommand,
-  generateCommand,
-  keysCommand as default,
-};
+export { keysCommand as default };

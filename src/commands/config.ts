@@ -1,6 +1,6 @@
 import { Command } from 'commander';
-import { loadConfig } from '../config/index.ts';
-import * as logger from '../utils/logger.ts';
+import { loadConfig } from '../config/index.js';
+import logger from '../utils/logger.js';
 
 export const configCommand = new Command('config')
   .description('Manage configuration')
@@ -15,14 +15,14 @@ const showCommand = new Command('show')
       const config = await loadConfig();
       logger.setConfig(config);
 
-      console.log('Current Configuration:');
-      console.log('=====================');
-      console.log(`Environment: ${config.environment}`);
-      console.log(`Log Level:   ${config.logLevel}`);
-      console.log(`Content Topic: ${config.contentTopic}`);
+      logger.status('Current Configuration:');
+      logger.status('=====================');
+      logger.status(`Environment: ${config.environment}`);
+      logger.status(`Log Level:   ${config.logLevel}`);
+      logger.status(`Content Topic: ${config.contentTopic}`);
     } catch (error) {
-      console.error(`Error loading configuration: ${(error as Error).message}`);
-      console.log(
+      logger.fail(`Error loading configuration: ${(error as Error).message}`);
+      logger.status(
         '\nSuggestion: Copy dpulse.yml.example to dpulse.yml and configure your services',
       );
       process.exit(1);
